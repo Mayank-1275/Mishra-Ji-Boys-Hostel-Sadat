@@ -25,12 +25,13 @@ def _section(title):
 
 def _edit_image_input(label, key_prefix, existing_b64):
     """
-    Show current image (if any) + upload/camera to replace it.
+    Show current image (if any) + a simple Upload to replace it.
+    (Phone's Upload already offers camera + gallery.)
     Returns: ('keep', None) to keep old, or ('new', <UploadedFile>) to replace.
     """
     st.markdown(f"<div style='font-weight:700;margin:6px 0 2px 0;'>{label}</div>",
                 unsafe_allow_html=True)
-    col_cur, col_up, col_cam = st.columns([1, 1, 1])
+    col_cur, col_up = st.columns([1, 2])
 
     with col_cur:
         img = decode_image(existing_b64)
@@ -46,14 +47,10 @@ def _edit_image_input(label, key_prefix, existing_b64):
             )
 
     with col_up:
-        uploaded = st.file_uploader("Replace (upload)", type=["jpg", "jpeg", "png"],
+        new_file = st.file_uploader("Replace (upload)", type=["jpg", "jpeg", "png"],
                                     key=f"edit_{key_prefix}_up",
                                     label_visibility="collapsed")
-    with col_cam:
-        captured = st.camera_input("Replace (camera)", key=f"edit_{key_prefix}_cam",
-                                   label_visibility="collapsed")
 
-    new_file = captured if captured is not None else uploaded
     if new_file is not None:
         return ("new", new_file)
     return ("keep", None)
@@ -72,34 +69,41 @@ def edit_member_form(member):
         unsafe_allow_html=True,
     )
 
-    # ---- Text details (outside a form so images with camera work live) ----
     _section("👤 Personal details")
-    name = st.text_input("Full Name *", value=member.get("name") or "")
+    name = st.text_input("Full Name *", value=member.get("name") or "",
+                         key="e_name")
 
     dob_value = member.get("dob") or date(2000, 1, 1)
     dob = st.date_input("Date of Birth", value=dob_value,
-                        min_value=date(1950, 1, 1), max_value=today_ist())
-    address = st.text_area("Address", value=member.get("address") or "")
+                        min_value=date(1950, 1, 1), max_value=today_ist(),
+                        key="e_dob")
+    address = st.text_area("Address", value=member.get("address") or "",
+                           key="e_address")
 
     _section("👨‍👩‍👦 Family details")
     col1, col2 = st.columns(2)
     with col1:
         father_name = st.text_input("Father's Name",
-                                    value=member.get("father_name") or "")
+                                    value=member.get("father_name") or "",
+                                    key="e_father_name")
         father_mobile = st.text_input("Father's Mobile (10 digits)",
-                                      value=member.get("father_mobile") or "")
+                                      value=member.get("father_mobile") or "",
+                                      key="e_father_mobile")
     with col2:
         mother_name = st.text_input("Mother's Name",
-                                    value=member.get("mother_name") or "")
+                                    value=member.get("mother_name") or "",
+                                    key="e_mother_name")
         mother_mobile = st.text_input("Mother's Mobile (10 digits)",
-                                      value=member.get("mother_mobile") or "")
+                                      value=member.get("mother_mobile") or "",
+                                      key="e_mother_mobile")
 
     whatsapp = st.text_input("WhatsApp Number (10 digits) *",
-                             value=member.get("whatsapp") or "")
+                             value=member.get("whatsapp") or "",
+                             key="e_whatsapp")
 
     _section("📷 Photos & ID")
     st.caption("Leave a photo unchanged to keep the current one; "
-               "upload or capture to replace it.")
+               "tap Upload to replace it (phone offers camera or gallery).")
 
     photo_action = _edit_image_input("Member Photo", "photo", member.get("photo"))
     father_action = _edit_image_input("Father's Pic", "father_pic",

@@ -29,17 +29,11 @@ def _section(title):
 
 
 def _image_input(label, key_prefix):
-    """Upload/Camera toggle; only the chosen input shows. Returns the file."""
+    """Simple upload box (phone's Upload already offers camera + gallery)."""
     st.markdown(f"<div style='font-weight:700;margin:8px 0 2px 0;'>{label}</div>",
                 unsafe_allow_html=True)
-    mode = st.radio(f"{label} mode", ["Upload", "Camera"], horizontal=True,
-                    key=f"{key_prefix}_mode", label_visibility="collapsed")
-    if mode == "Upload":
-        return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
-                                key=f"{key_prefix}_up", label_visibility="collapsed")
-    else:
-        return st.camera_input("Take a photo", key=f"{key_prefix}_cam",
-                               label_visibility="collapsed")
+    return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
+                            key=f"{key_prefix}_up", label_visibility="collapsed")
 
 
 def guests_screen():
@@ -62,7 +56,7 @@ def guests_screen():
 def _add_guest_form():
     rooms = _fetch_rooms()
 
-    # ---- Details (NOT in a form; widgets keep their values via keys) ----
+    # ---- Details (widgets keep their values via keys) ----
     _section("👤 Guest details")
     name = st.text_input("Full Name *", placeholder="Guest's full name",
                          key="g_name")
@@ -89,8 +83,9 @@ def _add_guest_form():
 
     room_no = st.selectbox("Room number", rooms, key="g_room")
 
-    # ---- Photos with toggle (outside form, so toggle switches live) ----
+    # ---- Photos (simple upload; phone gives camera + gallery) ----
     _section("📷 Photos & ID (optional)")
+    st.caption("Tap Upload — your phone will offer Camera or Gallery.")
     photo_file = _image_input("Guest Photo", "guest_photo")
     id_front_file = _image_input("ID Front", "guest_id_front")
     id_back_file = _image_input("ID Back", "guest_id_back")

@@ -10,17 +10,11 @@ from utils.helpers import today_ist
 
 
 def _image_input(label, key_prefix):
-    """Upload/Camera toggle; only the chosen input shows. Returns the file."""
+    """Simple upload box (phone's Upload already offers camera + gallery)."""
     st.markdown(f"<div style='font-weight:700;margin:8px 0 2px 0;'>{label}</div>",
                 unsafe_allow_html=True)
-    mode = st.radio(f"{label} mode", ["Upload", "Camera"], horizontal=True,
-                    key=f"{key_prefix}_mode", label_visibility="collapsed")
-    if mode == "Upload":
-        return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
-                                key=f"{key_prefix}_up", label_visibility="collapsed")
-    else:
-        return st.camera_input("Take a photo", key=f"{key_prefix}_cam",
-                               label_visibility="collapsed")
+    return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
+                            key=f"{key_prefix}_up", label_visibility="collapsed")
 
 
 def _valid_mobile(number):
@@ -46,7 +40,7 @@ def add_member_screen():
         unsafe_allow_html=True,
     )
 
-    # ---- Details (NOT in a form; widgets keep their values via keys) ----
+    # ---- Details (widgets keep their values via keys) ----
     _section("👤 Personal details")
     name = st.text_input("Full Name *", placeholder="e.g. Ramesh Kumar", key="m_name")
     dob = st.date_input(
@@ -79,8 +73,8 @@ def add_member_screen():
         key="m_deposit"
     )
 
-    # ---- Photos with toggle (outside form, so toggle switches live) ----
     _section("📷 Photos & ID")
+    st.caption("Tap Upload — your phone will offer Camera or Gallery.")
     photo_file = _image_input("Member Photo", "photo")
     father_pic_file = _image_input("Father's Pic (optional)", "father_pic")
     id_front_file = _image_input("ID Front", "id_front")
@@ -197,7 +191,6 @@ def add_member_screen():
             st.toast("Member added.")
 
         except ValueError as ve:
-            # Raised by compress_image if a photo is over the size limit.
             st.error(str(ve))
         except Exception as e:
             if conn is not None:
