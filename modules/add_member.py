@@ -9,24 +9,18 @@ from utils.pdf import member_profile_pdf, append_rules_pdf
 from utils.helpers import today_ist
 
 
-def _image_input(label, key_prefix, optional=False):
-    """Show an upload box + a camera for one image. Return whichever is filled."""
-    suffix = " (optional)" if optional else ""
-    st.markdown(f"<div style='font-weight:700;margin:6px 0 2px 0;'>{label}{suffix}"
-                f"</div>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        uploaded = st.file_uploader(
-            "Upload from device",
-            type=["jpg", "jpeg", "png"],
-            key=f"{key_prefix}_upload",
-            label_visibility="collapsed",
-        )
-    with col2:
-        captured = st.camera_input("Or take a photo", key=f"{key_prefix}_camera",
-                                   label_visibility="collapsed")
-    # Prefer the camera photo if taken, else the uploaded file.
-    return captured if captured is not None else uploaded
+def _image_input(label, key_prefix):
+    """Upload/Camera toggle; only the chosen input shows. Returns the file."""
+    st.markdown(f"<div style='font-weight:700;margin:8px 0 2px 0;'>{label}</div>",
+                unsafe_allow_html=True)
+    mode = st.radio(f"{label} mode", ["Upload", "Camera"], horizontal=True,
+                    key=f"{key_prefix}_mode", label_visibility="collapsed")
+    if mode == "Upload":
+        return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
+                                key=f"{key_prefix}_up", label_visibility="collapsed")
+    else:
+        return st.camera_input("Take a photo", key=f"{key_prefix}_cam",
+                               label_visibility="collapsed")
 
 
 def _valid_mobile(number):
@@ -52,46 +46,52 @@ def add_member_screen():
         unsafe_allow_html=True,
     )
 
-    # Everything is inside ONE form so all values submit together on Save.
-    with st.form("add_member_form", clear_on_submit=False):
-        _section("👤 Personal details")
-        name = st.text_input("Full Name *", placeholder="e.g. Ramesh Kumar")
-        dob = st.date_input(
-            "Date of Birth",
-            value=date(2000, 1, 1),
-            min_value=date(1950, 1, 1),
-            max_value=today_ist(),
-        )
-        address = st.text_area("Address", placeholder="Village / City, District")
+    # ---- Details (NOT in a form; widgets keep their values via keys) ----
+    _section("👤 Personal details")
+    name = st.text_input("Full Name *", placeholder="e.g. Ramesh Kumar", key="m_name")
+    dob = st.date_input(
+        "Date of Birth",
+        value=date(2000, 1, 1),
+        min_value=date(1950, 1, 1),
+        max_value=today_ist(),
+        key="m_dob",
+    )
+    address = st.text_area("Address", placeholder="Village / City, District",
+                           key="m_address")
 
-        _section("👨‍👩‍👦 Family details")
-        col1, col2 = st.columns(2)
-        with col1:
-            father_name = st.text_input("Father's Name")
-            father_mobile = st.text_input("Father's Mobile (10 digits)")
-        with col2:
-            mother_name = st.text_input("Mother's Name")
-            mother_mobile = st.text_input("Mother's Mobile (10 digits)")
+    _section("👨‍👩‍👦 Family details")
+    col1, col2 = st.columns(2)
+    with col1:
+        father_name = st.text_input("Father's Name", key="m_father_name")
+        father_mobile = st.text_input("Father's Mobile (10 digits)",
+                                      key="m_father_mobile")
+    with col2:
+        mother_name = st.text_input("Mother's Name", key="m_mother_name")
+        mother_mobile = st.text_input("Mother's Mobile (10 digits)",
+                                      key="m_mother_mobile")
 
-        whatsapp = st.text_input("WhatsApp Number (10 digits) *",
-                                 placeholder="10-digit number")
+    whatsapp = st.text_input("WhatsApp Number (10 digits) *",
+                             placeholder="10-digit number", key="m_whatsapp")
 
-        _section("💵 Security deposit (optional)")
-        deposit_amount = st.number_input(
-            "Deposit collected (₹)", min_value=0.0, step=100.0, value=0.0
-        )
+    _section("💵 Security deposit (optional)")
+    deposit_amount = st.number_input(
+        "Deposit collected (₹)", min_value=0.0, step=100.0, value=0.0,
+        key="m_deposit"
+    )
 
-        _section("📷 Photos & ID")
-        st.caption("Upload from device OR take a photo for each. "
-                   "If you do both, the camera photo is used.")
-        photo_file = _image_input("Member Photo", "photo")
-        father_pic_file = _image_input("Father's Pic", "father_pic", optional=True)
-        id_front_file = _image_input("ID Front", "id_front")
-        id_back_file = _image_input("ID Back", "id_back")
+    # ---- Photos with toggle (outside form, so toggle switches live) ----
+    _section("📷 Photos & ID")
+    photo_file = _image_input("Member Photo", "photo")
+    father_pic_file = _image_input("Father's Pic (optional)", "father_pic")
+    id_front_file = _image_input("ID Front", "id_front")
+    id_back_file = _image_input("ID Back", "id_back")
 
-        allow_duplicate = st.checkbox("Add even if a similar member already exists")
+    allow_duplicate = st.checkbox("Add even if a similar member already exists",
+                                  key="m_allow_dup")
 
-        submitted = st.form_submit_button("💾 Save Member", use_container_width=True)
+    st.write("")
+    submitted = st.button("💾 Save Member", use_container_width=True,
+                          key="save_member_btn")
 
     # ---- Runs only after the Save button is clicked ----
     if submitted:

@@ -29,19 +29,17 @@ def _section(title):
 
 
 def _image_input(label, key_prefix):
-    """Upload box + camera for one image. Returns whichever is filled."""
-    st.markdown(f"<div style='font-weight:700;margin:6px 0 2px 0;'>{label}</div>",
+    """Upload/Camera toggle; only the chosen input shows. Returns the file."""
+    st.markdown(f"<div style='font-weight:700;margin:8px 0 2px 0;'>{label}</div>",
                 unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        uploaded = st.file_uploader("Upload from device",
-                                    type=["jpg", "jpeg", "png"],
-                                    key=f"{key_prefix}_up",
-                                    label_visibility="collapsed")
-    with col2:
-        captured = st.camera_input("Or take a photo", key=f"{key_prefix}_cam",
-                                   label_visibility="collapsed")
-    return captured if captured is not None else uploaded
+    mode = st.radio(f"{label} mode", ["Upload", "Camera"], horizontal=True,
+                    key=f"{key_prefix}_mode", label_visibility="collapsed")
+    if mode == "Upload":
+        return st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"],
+                                key=f"{key_prefix}_up", label_visibility="collapsed")
+    else:
+        return st.camera_input("Take a photo", key=f"{key_prefix}_cam",
+                               label_visibility="collapsed")
 
 
 def guests_screen():
@@ -64,40 +62,42 @@ def guests_screen():
 def _add_guest_form():
     rooms = _fetch_rooms()
 
-    # Everything inside ONE form so all values submit together on Save.
-    with st.form("add_guest_form"):
-        _section("👤 Guest details")
-        name = st.text_input("Full Name *", placeholder="Guest's full name")
-        whatsapp = st.text_input("WhatsApp / Mobile (10 digits)",
-                                 placeholder="10-digit number")
-        purpose = st.text_input("Purpose of stay",
-                                placeholder="e.g. Wedding visit, exam, work")
+    # ---- Details (NOT in a form; widgets keep their values via keys) ----
+    _section("👤 Guest details")
+    name = st.text_input("Full Name *", placeholder="Guest's full name",
+                         key="g_name")
+    whatsapp = st.text_input("WhatsApp / Mobile (10 digits)",
+                             placeholder="10-digit number", key="g_whatsapp")
+    purpose = st.text_input("Purpose of stay",
+                            placeholder="e.g. Wedding visit, exam, work",
+                            key="g_purpose")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            start_date = st.date_input("Start date", value=today_ist())
-        with col2:
-            leaving_date = st.date_input("Leaving date", value=today_ist())
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start date", value=today_ist(), key="g_start")
+    with col2:
+        leaving_date = st.date_input("Leaving date", value=today_ist(), key="g_leave")
 
-        col3, col4 = st.columns(2)
-        with col3:
-            total_rent = st.number_input("Total rent for whole stay (₹)",
-                                         min_value=0.0, step=100.0, value=0.0)
-        with col4:
-            advance = st.number_input("Advance given (₹)",
-                                      min_value=0.0, step=100.0, value=0.0)
+    col3, col4 = st.columns(2)
+    with col3:
+        total_rent = st.number_input("Total rent for whole stay (₹)",
+                                     min_value=0.0, step=100.0, value=0.0,
+                                     key="g_total")
+    with col4:
+        advance = st.number_input("Advance given (₹)", min_value=0.0, step=100.0,
+                                  value=0.0, key="g_advance")
 
-        room_no = st.selectbox("Room number", rooms)
+    room_no = st.selectbox("Room number", rooms, key="g_room")
 
-        _section("📷 Photos & ID (optional)")
-        st.caption("Upload from device OR take a photo for each. "
-                   "If you do both, the camera photo is used.")
-        photo_file = _image_input("Guest Photo", "guest_photo")
-        id_front_file = _image_input("ID Front", "guest_id_front")
-        id_back_file = _image_input("ID Back", "guest_id_back")
+    # ---- Photos with toggle (outside form, so toggle switches live) ----
+    _section("📷 Photos & ID (optional)")
+    photo_file = _image_input("Guest Photo", "guest_photo")
+    id_front_file = _image_input("ID Front", "guest_id_front")
+    id_back_file = _image_input("ID Back", "guest_id_back")
 
-        submitted = st.form_submit_button("💾 Save Guest",
-                                          use_container_width=True)
+    st.write("")
+    submitted = st.button("💾 Save Guest", use_container_width=True,
+                          key="save_guest_btn")
 
     if submitted:
         errors = []
