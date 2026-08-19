@@ -29,32 +29,19 @@ def _section(title):
 
 
 def _image_input(label, key_prefix):
-    """
-    Small Upload/Camera toggle; only the chosen input appears.
-    Returns whichever file is provided (or None).
-    """
-    st.markdown(f"<div style='font-weight:700;margin:8px 0 2px 0;'>{label}</div>",
+    """Upload box + camera for one image. Returns whichever is filled."""
+    st.markdown(f"<div style='font-weight:700;margin:6px 0 2px 0;'>{label}</div>",
                 unsafe_allow_html=True)
-    mode = st.radio(
-        f"{label} input mode",
-        ["Upload", "Camera"],
-        horizontal=True,
-        key=f"{key_prefix}_mode",
-        label_visibility="collapsed",
-    )
-    if mode == "Upload":
-        return st.file_uploader(
-            "Choose an image",
-            type=["jpg", "jpeg", "png"],
-            key=f"{key_prefix}_upload",
-            label_visibility="collapsed",
-        )
-    else:
-        return st.camera_input(
-            "Take a photo",
-            key=f"{key_prefix}_camera",
-            label_visibility="collapsed",
-        )
+    col1, col2 = st.columns(2)
+    with col1:
+        uploaded = st.file_uploader("Upload from device",
+                                    type=["jpg", "jpeg", "png"],
+                                    key=f"{key_prefix}_up",
+                                    label_visibility="collapsed")
+    with col2:
+        captured = st.camera_input("Or take a photo", key=f"{key_prefix}_cam",
+                                   label_visibility="collapsed")
+    return captured if captured is not None else uploaded
 
 
 def guests_screen():
@@ -77,7 +64,7 @@ def guests_screen():
 def _add_guest_form():
     rooms = _fetch_rooms()
 
-    # ---- Details (inside a form) ----
+    # Everything inside ONE form so all values submit together on Save.
     with st.form("add_guest_form"):
         _section("👤 Guest details")
         name = st.text_input("Full Name *", placeholder="Guest's full name")
@@ -102,23 +89,17 @@ def _add_guest_form():
 
         room_no = st.selectbox("Room number", rooms)
 
-        st.caption("Fill photos below (optional), then press Save Guest.")
-        # Placeholder submit inside form (disabled) — real Save is below.
-        st.form_submit_button("Continue", use_container_width=True,
-                              disabled=True, help="Add photos below, then Save")
+        _section("📷 Photos & ID (optional)")
+        st.caption("Upload from device OR take a photo for each. "
+                   "If you do both, the camera photo is used.")
+        photo_file = _image_input("Guest Photo", "guest_photo")
+        id_front_file = _image_input("ID Front", "guest_id_front")
+        id_back_file = _image_input("ID Back", "guest_id_back")
 
-    # ---- Photos & ID (OUTSIDE the form, so the toggle switches live) ----
-    _section("📷 Photos & ID (optional)")
-    photo_file = _image_input("Guest Photo", "guest_photo")
-    id_front_file = _image_input("ID Front", "guest_id_front")
-    id_back_file = _image_input("ID Back", "guest_id_back")
-
-    st.write("")
-    submitted = st.button("💾 Save Guest", use_container_width=True,
-                          key="save_guest_btn")
+        submitted = st.form_submit_button("💾 Save Guest",
+                                          use_container_width=True)
 
     if submitted:
-        # Validation.
         errors = []
         if not name.strip():
             errors.append("Full Name is required.")
@@ -164,7 +145,6 @@ def _add_guest_form():
             st.success(f"Guest '{name.strip()}' saved. 🎉")
             st.toast("Guest added.")
 
-            # Build a guest profile card PDF (with photos) + rules page.
             guest_data = {
                 "name": name.strip(),
                 "whatsapp": whatsapp,
@@ -194,7 +174,6 @@ def _add_guest_form():
                     pass
             st.error("Could not save the guest. Please try again.")
 
-    # Offer the guest profile card PDF after a successful add.
     if st.session_state.get("guest_add_pdf"):
         st.download_button(
             "📄 Download Guest Profile Card PDF",
@@ -217,7 +196,6 @@ def _active_guests():
         st.info("No active guests right now.")
         return
 
-    # Highlight anyone leaving today.
     today = today_ist()
     leaving_today = [g for g in guests if g["leaving_date"] == today]
     if leaving_today:
@@ -230,7 +208,6 @@ def _active_guests():
             unsafe_allow_html=True,
         )
 
-    # Summary table.
     table = [
         {"ID": g["id"], "Name": g["name"], "Room": g["room_no"],
          "From": format_date(g["start_date"]), "To": format_date(g["leaving_date"]),
@@ -261,7 +238,6 @@ def _active_guests():
     if st.button("Exit guest & mark inactive", use_container_width=True):
         _exit_guest(guest, balance)
 
-    # Show receipt if just generated.
     if st.session_state.get("guest_receipt_pdf"):
         st.download_button(
             "📄 Download Guest Receipt",
@@ -320,4 +296,4 @@ def _exit_guest(guest, balance):
                 conn.rollback()
             except Exception:
                 pass
-        st.error("Could not exit the guest. Please try again.")
+        st.error("Could not save the guest. Please try again.")
