@@ -1,0 +1,16 @@
+# Secret settings - NEVER upload these
+.streamlit/secrets.toml
+
+# Virtual environment - not needed on the server
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Private assets (payment QR)
+assets/payment_qr.png
