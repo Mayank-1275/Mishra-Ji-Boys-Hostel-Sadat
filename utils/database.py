@@ -29,11 +29,21 @@ def get_connection():
 def get_cursor():
     """
     Give back a fresh cursor plus the connection.
-    A 'cursor' is the tool we use to run SQL commands.
-    dictionary=True means results come back as easy-to-read
-    name:value pairs instead of plain tuples.
+    Uses a buffered cursor so results are fully read (prevents the
+    'Unread result found' error). Reconnects if the connection dropped.
     """
     conn = get_connection()
+
     # Make sure the connection is still alive; reconnect if it dropped.
-    conn.ping(reconnect=True, attempts=3, delay=2)
-    return conn, conn.cursor(dictionary=True)
+    try:
+        conn.ping(reconnect=True, attempts=3, delay=2)
+    except Exception:
+        # If ping fails (stale/unread result), reset the cached connection.
+        try:
+            get_connection.clear()
+        except Exception:
+            pass
+        conn = get_connection()
+
+    # buffered=True reads all rows immediately, so nothing is left "unread".
+    return conn, conn.cursor(dictionary=True, buffered=True)
